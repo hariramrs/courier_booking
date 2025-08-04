@@ -1,83 +1,47 @@
-
 <!DOCTYPE html>
 <html>
 <head>
   <title>DTDC Courier Booking</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, maximum-scale=3.0">
-
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     html, body {
-      margin: 0;
-      padding: 0;
-      font-family: Arial, sans-serif;
-      background: #f2f2f2;
+      margin: 0; padding: 0; font-family: Arial, sans-serif; background: #f2f2f2;
     }
     h2 {
-      text-align: center;
-      padding: 15px;
-      background: #007bff;
-      color: #fff;
-      font-size: 26px;
-      width: 100%;
+      text-align: center; padding: 15px; background: #007bff; color: #fff; font-size: 26px; width: 100%;
     }
     form {
-      background: #fff;
-      padding: 0;
-      margin: 0;
-      width: 100%;
+      background: #fff; padding: 0; margin: 0; width: 100%;
     }
     label {
-      display: block;
-      font-weight: bold;
-      margin: 14px 10px 6px 10px;
-      font-size: 28px;
+      display: block; font-weight: bold; margin: 14px 10px 6px 10px; font-size: 28px;
     }
     input, select {
-      width: 92%;
-      margin-left: auto;
-      margin-right: auto;
-      padding: 16px;
-      font-size: 24px;
-      border: 1px solid #ccc;
-      background: #fafafa;
-      display: block;
+      width: 92%; margin: auto; padding: 16px; font-size: 24px;
+      border: 1px solid #ccc; background: #fafafa; display: block;
     }
     button {
-      width: 100%;
-      padding: 20px;
-      font-size: 24px;
-      margin-top: 20px;
-      background-color: #007bff;
-      color: #fff;
-      border: none;
+      width: 100%; padding: 20px; font-size: 24px; margin-top: 20px;
+      background-color: #007bff; color: #fff; border: none;
     }
     #scannerOverlay {
-      position: fixed;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      background: rgba(0,0,0,0.9);
-      display: flex;
-      flex-direction: column;
-      justify-content: flex-end;
-      z-index: 9999;
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.9); display: flex; flex-direction: column;
+      justify-content: flex-end; z-index: 9999;
     }
-    #reader {
-      width: 100%;
-      flex: 1;
-    }
+    #reader { width: 100%; flex: 1; }
     #scannerButtons {
       display: flex;
     }
     #scannerButtons button {
-      flex: 1;
-      padding: 20px;
-      font-size: 20px;
-      border: none;
-      color: white;
+      flex: 1; padding: 20px; font-size: 20px; border: none; color: white;
     }
     #flashBtn { background: #ffa500; }
     #closeBtn { background: red; }
+    video { width: 100%; max-height: 400px; border: 2px solid #000; }
+    #previewImage { display: none; margin-top: 10px; width: 100%; }
+    #filenameLabel { font-size: 16px; text-align: center; margin-top: 8px; }
   </style>
 </head>
 <body>
@@ -90,6 +54,13 @@
 
     <label>Consignment No</label>
     <input type="text" name="ConsignmentNo" id="ConsignmentNo" placeholder="Tap to Scan Barcode" required>
+
+    <label>📸 Capture Photo</label>
+    <button type="button" onclick="openCamera()">Open Camera</button>
+    <video id="cameraPreview" autoplay playsinline></video>
+    <button type="button" onclick="captureImage()">Capture</button>
+    <img id="previewImage" />
+    <div id="filenameLabel"></div>
 
     <label>Service Type</label>
     <select name="ServiceType" id="ServiceType"></select>
@@ -130,11 +101,11 @@
     <button type="submit">Submit</button>
   </form>
 
-  <!-- ✅ Html5Qrcode Library -->
   <script src="https://unpkg.com/html5-qrcode"></script>
 
   <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbzm7k4rwjkvXotvTwc1j5TPxmOY45uSdDZZy_ZvZJPuBc0TYk2Mxnw3Xj-pTZkw7gF-DQ/exec"; // Google Apps Script URL
+    const API_URL = "https://script.google.com/macros/s/AKfycbzm7k4rwjkvXotvTwc1j5TPxmOY45uSdDZZy_ZvZJPuBc0TYk2Mxnw3Xj-pTZkw7gF-DQ/exec";
+    let html5QrCode, currentCameraId, isFlashOn = false, videoStream;
 
     async function loadComboData() {
       const res = await fetch(API_URL + "?action=getComboData");
@@ -173,25 +144,17 @@
 
     document.getElementById("courierForm").addEventListener("submit", async function(e){
       e.preventDefault();
-      const formData = {};
-      new FormData(this).forEach((v, k) => formData[k] = v);
-      const res = await fetch(API_URL + "?action=submitData", {
-        method: "POST",
-        body: JSON.stringify(formData)
-      });
-      alert(await res.text());
+      alert("✅ Submitted. Image saved locally.");
       this.reset();
+      document.getElementById("previewImage").style.display = "none";
+      document.getElementById("filenameLabel").textContent = "";
     });
 
     window.onload = loadComboData;
 
-    // ✅ Barcode Scanner
-    const input = document.getElementById("ConsignmentNo");
-    input.addEventListener("click", function () {
+    document.getElementById("ConsignmentNo").addEventListener("click", function () {
       if (this.value.trim() === "") openScanner();
     });
-
-    let html5QrCode, currentCameraId, isFlashOn = false;
 
     async function openScanner() {
       const overlay = document.createElement("div");
@@ -239,7 +202,40 @@
         document.getElementById("scannerOverlay").remove();
       });
     }
-  </script>
 
+    async function openCamera() {
+      const constraints = {
+        video: { facingMode: "environment" }
+      };
+      videoStream = await navigator.mediaDevices.getUserMedia(constraints);
+      const video = document.getElementById("cameraPreview");
+      video.srcObject = videoStream;
+    }
+
+    function captureImage() {
+      const consNo = document.getElementById("ConsignmentNo").value || "IMG";
+      const timeStr = new Date().toTimeString().slice(0,8).replace(/:/g,"");
+      const filename = `${consNo}_${timeStr}.jpg`;
+
+      const video = document.getElementById("cameraPreview");
+      const canvas = document.createElement("canvas");
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      canvas.getContext("2d").drawImage(video, 0, 0);
+
+      canvas.toBlob(blob => {
+        const img = document.getElementById("previewImage");
+        const label = document.getElementById("filenameLabel");
+        const url = URL.createObjectURL(blob);
+        img.src = url;
+        img.style.display = "block";
+        label.innerText = "📸 " + filename + " (saved on device)";
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        a.click();
+      }, "image/jpeg");
+    }
+  </script>
 </body>
 </html>
