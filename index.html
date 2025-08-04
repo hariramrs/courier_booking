@@ -98,14 +98,21 @@
     <label>Amount</label>
     <input type="number" name="Amount" id="Amount" step="any">
 
+    
+    <button type="button" onclick="openCamera()">Open Camera</button>
+    <video id="cameraPreview" autoplay playsinline></video>
+    <button type="button" onclick="captureImage()">Capture</button>
+    <img id="previewImage" />
+    <div id="filenameLabel"></div>
     <button type="submit">Submit</button>
+    
   </form>
 
   <script src="https://unpkg.com/html5-qrcode"></script>
 
   <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbzm7k4rwjkvXotvTwc1j5TPxmOY45uSdDZZy_ZvZJPuBc0TYk2Mxnw3Xj-pTZkw7gF-DQ/exec";
-    let html5QrCode, currentCameraId, isFlashOn = false, videoStream;
+    let html5QrCode, currentCameraId, isFlashOn = false, videoStream, lastImageBlob = null, lastFilename = '';
 
     async function loadComboData() {
       const res = await fetch(API_URL + "?action=getComboData");
@@ -147,6 +154,12 @@
       alert("✅ Submitted. Image saved locally.");
       this.reset();
       document.getElementById("previewImage").style.display = "none";
+      if (lastImageBlob) {
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(lastImageBlob);
+        a.download = lastFilename || "courier_image.jpg";
+        lastImageBlob = blob; lastFilename = filename; a.click();
+      }
       document.getElementById("filenameLabel").textContent = "";
     });
 
@@ -213,6 +226,7 @@
     }
 
     function captureImage() {
+      stopCamera();
       const consNo = document.getElementById("ConsignmentNo").value || "IMG";
       const timeStr = new Date().toTimeString().slice(0,8).replace(/:/g,"");
       const filename = `${consNo}_${timeStr}.jpg`;
@@ -233,7 +247,7 @@
         const a = document.createElement("a");
         a.href = url;
         a.download = filename;
-        a.click();
+        lastImageBlob = blob; lastFilename = filename; a.click();
       }, "image/jpeg");
     }
   </script>
