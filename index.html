@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html>
 <head>
@@ -26,67 +25,47 @@
       padding: 0;
       margin: 0;
       width: 100%;
-      border-radius: 0;
     }
     label {
       display: block;
       font-weight: bold;
       margin: 14px 10px 6px 10px;
-      font-size: 40px;
+      font-size: 28px;
     }
     input, select {
       width: 92%;
       margin-left: auto;
       margin-right: auto;
-      padding: 32px;
-      font-size: 34px;
+      padding: 16px;
+      font-size: 24px;
       border: 1px solid #ccc;
       background: #fafafa;
-      border-radius: 0;
       display: block;
     }
     button {
       width: 100%;
-      padding: 28px;
+      padding: 20px;
       font-size: 24px;
       margin-top: 20px;
       background-color: #007bff;
       color: #fff;
       border: none;
-      border-radius: 0;
-      font-weight: bold;
-    }
-    #previewImage {
-      display: block;
-      margin-top: 10px;
-      width: 100%;
     }
 
-    #darkToggle {
-      margin: 10px;
-      transform: scale(1.5);
-    }
-    .toggle-label {
-      font-size: 20px;
-      margin-left: 5px;
-    }
-
-    /* ZXing Scanner Overlay */
+    /* Scanner Overlay */
     #scannerOverlay {
       position: fixed;
       top: 0; left: 0;
-      width: 100%;
-      height: 100%;
-      background: #000;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.9);
       display: flex;
       flex-direction: column;
       justify-content: flex-end;
       z-index: 9999;
     }
-    #video {
-      flex: 1;
+    #reader {
       width: 100%;
-      object-fit: cover;
+      flex: 1;
     }
     #scannerButtons {
       display: flex;
@@ -103,124 +82,73 @@
   </style>
 </head>
 <body>
-  <div style="text-align:right; padding:10px;">
-    <input type="checkbox" id="darkToggle" onchange="toggleDarkMode()">
-    <label for="darkToggle" class="toggle-label">Dark Mode</label>
-  </div>
 
   <h2>DTDC Courier Booking</h2>
 
   <form id="courierForm">
-    <label>Sender Name</label>
-    <select name="SenderName" id="SenderName"></select>
-
     <label>Consignment No</label>
-    <input type="text" name="ConsignmentNo" id="ConsignmentNo" required placeholder="Tap to Scan Barcode">
+    <input type="text" name="ConsignmentNo" id="ConsignmentNo" placeholder="Tap to Scan Barcode" required>
 
-    <label>Service Type</label>
-    <select name="ServiceType" id="ServiceType"></select>
-
-    <label>Shipment Type</label>
-    <select name="ShipmentType" id="ShipmentType"></select>
-
-    <label>Weight</label>
-    <input type="number" name="Weight" id="Weight" step="any">
-
-    <label>Sender Phone</label>
-    <input type="tel" name="SenderPhone" id="SenderPhone">
-
-    <label>Receiver Pincode</label>
-    <input type="number" name="ReceiverPincode" id="ReceiverPincode">
-
-    <label>Receiver Phone</label>
-    <input type="tel" name="ReceiverPhone" id="ReceiverPhone">
-
-    <label>Number Of Pieces</label>
-    <input type="number" name="NumberOfPieces" id="NumberOfPieces">
-
-    <label>Declared Value</label>
-    <input type="number" name="DeclaredValue" id="DeclaredValue">
-
-    <label>Risk Surcharge</label>
-    <select name="RiskSurcharge" id="RiskSurcharge"></select>
-
-    <label>Content</label>
-    <select name="Content" id="Content"></select>
-
-    <label>Pay Mode</label>
-    <select name="PayMode" id="PayMode"></select>
-
-    <label>Amount</label>
-    <input type="number" name="Amount" id="Amount" step="any">
-
-    <label>Capture Photo</label>
-    <input type="file" accept="image/*" capture="environment" id="ImageInput">
-
-    <img id="previewImage" style="display:none;"/>
-
+    <!-- You can add other fields here -->
     <button type="submit">Submit</button>
   </form>
 
-  <!-- ✅ ZXing Library -->
-  <script src="https://cdn.jsdelivr.net/npm/@zxing/browser@latest"></script>
+  <!-- ✅ Html5Qrcode Library -->
+  <script src="https://unpkg.com/html5-qrcode"></script>
 
   <script>
-    function toggleDarkMode() {
-      document.body.classList.toggle("dark-mode");
-    }
-
-    // ✅ ZXing Scanner
-    let codeReader, stream, flashOn = false;
-
-    document.getElementById("ConsignmentNo").addEventListener("click", function () {
-      if (this.value.trim() === "") startZXingScanner();
+    const input = document.getElementById("ConsignmentNo");
+    input.addEventListener("click", function () {
+      if (this.value.trim() === "") openScanner();
     });
 
-    async function startZXingScanner() {
+    let html5QrCode, currentCameraId, isFlashOn = false;
+
+    async function openScanner() {
       const overlay = document.createElement("div");
       overlay.id = "scannerOverlay";
       overlay.innerHTML = `
-        <video id="video" autoplay playsinline></video>
+        <div id="reader"></div>
         <div id="scannerButtons">
-          <button id="flashBtn" onclick="toggleZXingFlash()">🔦 Flash</button>
-          <button id="closeBtn" onclick="stopZXingScanner()">Close</button>
+          <button id="flashBtn" onclick="toggleFlash()">🔦 Flash</button>
+          <button id="closeBtn" onclick="closeScanner()">Close</button>
         </div>
       `;
       document.body.appendChild(overlay);
 
-      codeReader = new ZXing.BrowserMultiFormatReader();
-      const devices = await ZXing.BrowserCodeReader.listVideoInputDevices();
-      const selectedDeviceId = devices.length > 0 ? devices[0].deviceId : null;
+      html5QrCode = new Html5Qrcode("reader");
+      const cameras = await Html5Qrcode.getCameras();
+      currentCameraId = cameras[0].id;
 
-      codeReader.decodeFromVideoDevice(selectedDeviceId, 'video', (result, err) => {
-        if (result) {
-          document.getElementById("ConsignmentNo").value = result.text;
-          stopZXingScanner();
-        }
-      });
-
-      const videoEl = document.getElementById("video");
-      videoEl.style.cssText = "flex:1;object-fit:cover;width:100%;";
-      videoEl.onplaying = () => {
-        stream = videoEl.srcObject.getVideoTracks()[0];
-      };
+      html5QrCode.start(
+        currentCameraId,
+        { fps: 10, qrbox: { width: 300, height: 150 } },
+        (decodedText) => {
+          document.getElementById("ConsignmentNo").value = decodedText;
+          closeScanner();
+        },
+        (err) => { console.log(err); }
+      );
     }
 
-    async function toggleZXingFlash() {
-      if (!stream) return alert("Flashlight not supported");
-      flashOn = !flashOn;
+    async function toggleFlash() {
       try {
-        await stream.applyConstraints({ advanced: [{ torch: flashOn }] });
+        if (!html5QrCode) return;
+        isFlashOn = !isFlashOn;
+        await html5QrCode.applyVideoConstraints({
+          advanced: [{ torch: isFlashOn }]
+        });
       } catch (e) {
-        alert("Flashlight control not supported on this browser/device");
+        alert("Flashlight not supported on this device/browser");
       }
     }
 
-    function stopZXingScanner() {
-      if (codeReader) codeReader.reset();
-      const overlay = document.getElementById("scannerOverlay");
-      if (overlay) overlay.remove();
+    function closeScanner() {
+      if (html5QrCode) html5QrCode.stop().then(() => {
+        document.getElementById("scannerOverlay").remove();
+      });
     }
   </script>
+
 </body>
 </html>
