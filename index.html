@@ -56,11 +56,7 @@
     <input type="text" name="ConsignmentNo" id="ConsignmentNo" placeholder="Tap to Scan Barcode" required>
 
     <label>📸 Capture Photo</label>
-    <button type="button" onclick="openCamera()">Open Camera</button>
-    <video id="cameraPreview" autoplay playsinline></video>
-    <button type="button" onclick="captureImage()">Capture</button>
-    <img id="previewImage" />
-    <div id="filenameLabel"></div>
+    
 
     <label>Service Type</label>
     <select name="ServiceType" id="ServiceType"></select>
@@ -98,12 +94,18 @@
     <label>Amount</label>
     <input type="number" name="Amount" id="Amount" step="any">
 
-    
-    <button type="button" onclick="openCamera()">Open Camera</button>
-    <video id="cameraPreview" autoplay playsinline></video>
-    <button type="button" onclick="captureImage()">Capture</button>
-    <img id="previewImage" />
+    <label>Capture Photo</label>
+    <button type="button" onclick="openCamera()">📸 Open Camera</button>
+    <video id="cameraPreview" autoplay playsinline style="width:100%;max-height:300px; display:none;"></video>
+    <button type="button" onclick="captureImage()">✅ Capture</button>
+    <img id="previewImage" style="display:none;"/>
     <div id="filenameLabel"></div>
+    
+    
+    
+
+    
+    
     <button type="submit">Submit</button>
     
   </form>
@@ -221,11 +223,13 @@
         video: { facingMode: "environment" }
       };
       videoStream = await navigator.mediaDevices.getUserMedia(constraints);
+      document.getElementById("cameraPreview").style.display = "block";
       const video = document.getElementById("cameraPreview");
       video.srcObject = videoStream;
     }
 
     function captureImage() {
+      document.getElementById("cameraPreview").style.display = "none";
       stopCamera();
       const consNo = document.getElementById("ConsignmentNo").value || "IMG";
       const timeStr = new Date().toTimeString().slice(0,8).replace(/:/g,"");
