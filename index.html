@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>DTDC Courier Booking 1</title>
+  <title>DTDC Courier Booking h</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, maximum-scale=3.0">
 
   <style>
@@ -89,7 +89,6 @@
     <label>Consignment No</label>
     <input type="text" name="ConsignmentNo" id="ConsignmentNo" placeholder="Tap to Scan Barcode" required>
 
-    <!-- You can add other fields here -->
     <button type="submit">Submit</button>
   </form>
 
@@ -117,15 +116,21 @@
       document.body.appendChild(overlay);
 
       html5QrCode = new Html5Qrcode("reader");
-      const cameras = await Html5Qrcode.getCameras();
-      currentCameraId = cameras[0].id;
 
+      // ✅ Back Camera Select
+      const devices = await Html5Qrcode.getCameras();
+      const backCam = devices.find(d => d.label.toLowerCase().includes('back')) || devices[0];
+      currentCameraId = backCam.id;
+
+      // ✅ Start Scanner (Code-128 only)
       html5QrCode.start(
         currentCameraId,
         { fps: 10, qrbox: { width: 300, height: 150 } },
-        (decodedText) => {
-          document.getElementById("ConsignmentNo").value = decodedText;
-          closeScanner();
+        (decodedText, result) => {
+          if (result.result.format.formatName === "CODE_128") {
+            document.getElementById("ConsignmentNo").value = decodedText;
+            closeScanner();
+          }
         },
         (err) => { console.log(err); }
       );
