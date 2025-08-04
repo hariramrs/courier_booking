@@ -94,7 +94,7 @@
     <label>Amount</label>
     <input type="number" name="Amount" id="Amount" step="any">
 
-    <label>Capture Photo</label>
+    
     <button type="button" onclick="openCamera()">📸 Open Camera</button>
     <video id="cameraPreview" autoplay playsinline style="width:100%;max-height:300px; display:none;"></video>
     <button type="button" onclick="captureImage()">✅ Capture</button>
@@ -158,6 +158,9 @@
       document.getElementById("previewImage").style.display = "none";
       if (lastImageBlob) {
         const a = document.createElement("a");
+        const preview = document.getElementById("previewImage");
+        preview.style.display = "block";
+        preview.src = URL.createObjectURL(lastImageBlob);
         a.href = URL.createObjectURL(lastImageBlob);
         a.download = lastFilename || "courier_image.jpg";
         lastImageBlob = blob; lastFilename = filename; a.click();
